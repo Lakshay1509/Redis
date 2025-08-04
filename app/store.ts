@@ -44,21 +44,17 @@ class RedisStore {
 }
 
 class RedisStoreArr {
-  private arrStore: Record<string,any[]>={
+  private arrStore: Record<string, any[]> = {};
 
+  set(key: string, value: string): number {
+    if (!(key in this.arrStore)) {
+      this.arrStore[key] = [];  
+    }
+    this.arrStore[key].push(value); 
+    return this.arrStore[key].length;
   }
-
-  set(key:string,value:string):number{
-
-      if(!(key in this.arrStore)){
-       this.arrStore.key = [];
-      }
-      this.arrStore.key.push(value);
-      return this.arrStore.key.length;
-  }
-
-  
 }
+
 
 export const store = new RedisStore();
 export const arrStore = new RedisStoreArr();
