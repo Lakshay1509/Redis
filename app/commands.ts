@@ -64,14 +64,18 @@ export function handleGet(connection: net.Socket, command: RESPCommand): void {
 
 export function handleRPUSH(connection: net.Socket, command: RESPCommand):void{
 
-    if(command.length!==3){
+    if(command.length <3){
 
         connection.write(formatRESPError("wrong number of arguments for 'RPUSH'command "));
         return;
     }
 
+    const values:string[] = [];
 
-    const length_arr = arrStore.set(command[1],command[2]);
+    for(let i = 2;i<command.length;i++){
+        arrStore.set(command[1],command[i]);
+    }
+    const length_arr = arrStore.getLen(command[1]);
     
     connection.write(formatRESPInt(length_arr))
 

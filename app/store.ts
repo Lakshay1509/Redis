@@ -53,6 +53,14 @@ class RedisStoreArr {
     this.arrStore[key].push(value); 
     return this.arrStore[key].length;
   }
+
+  getLen(key:string):number{
+
+    if (!(key in this.arrStore)) {
+      return 0;  
+    }
+    return this.arrStore[key].length;
+  }
 }
 
 
