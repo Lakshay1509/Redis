@@ -1,8 +1,7 @@
-import * as net from "net";
+import * as net from 'net';
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-console.log("Logs from your program will appear here!");
-
+// In-memory key-value store
+const store = new Map<string, string>();
 
 const server: net.Server = net.createServer((connection: net.Socket) => {
   connection.on("data", (data: Buffer) => {
@@ -14,19 +13,50 @@ const server: net.Server = net.createServer((connection: net.Socket) => {
     
     const cmd = command[0].toUpperCase();
     
-    if (cmd === 'PING') {
-      connection.write("+PONG\r\n");
-    } else if (cmd === 'ECHO') {
-      if (command.length !== 2) {
-        connection.write("-ERR wrong number of arguments for 'echo' command\r\n");
-        return;
-      }
-      
-      const message = command[1];
-      const response = `$${message.length}\r\n${message}\r\n`;
-      connection.write(response);
-    } else {
-      connection.write("-ERR unknown command\r\n");
+    switch (cmd) {
+      case 'PING':
+        connection.write("+PONG\r\n");
+        break;
+        
+      case 'ECHO':
+        if (command.length !== 2) {
+          connection.write("-ERR wrong number of arguments for 'echo' command\r\n");
+          return;
+        }
+        const message = command[1];
+        connection.write(`$${message.length}\r\n${message}\r\n`);
+        break;
+        
+      case 'SET':
+        if (command.length !== 3) {
+          connection.write("-ERR wrong number of arguments for 'set' command\r\n");
+          return;
+        }
+        const key = command[1];
+        const value = command[2];
+        store.set(key, value);
+        connection.write("+OK\r\n");  // RESP simple string
+        break;
+        
+      case 'GET':
+        if (command.length !== 2) {
+          connection.write("-ERR wrong number of arguments for 'get' command\r\n");
+          return;
+        }
+        const getKey = command[1];
+        const val = store.get(getKey);
+        
+        if (val === undefined) {
+          // Null bulk string for non-existent keys
+          connection.write("$-1\r\n");
+        } else {
+          // RESP bulk string
+          connection.write(`$${val.length}\r\n${val}\r\n`);
+        }
+        break;
+        
+      default:
+        connection.write("-ERR unknown command\r\n");
     }
   });
 });
@@ -60,6 +90,6 @@ function parseRESPCommand(input: string): string[] | null {
   return elements;
 }
 
-
-
-server.listen(6379, "127.0.0.1");
+server.listen(6379, () => {
+  console.log("Redis server listening on port 6379");
+});
