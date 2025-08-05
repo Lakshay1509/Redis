@@ -155,5 +155,25 @@ export function handleLRANGE(connection: net.Socket, command: RESPCommand): void
 }
 
 
+export function handleLPUSH(connection: net.Socket, command: RESPCommand):void{
+
+    if(command.length <3){
+
+        connection.write(formatRESPError("wrong number of arguments for 'RPUSH'command "));
+        return;
+    }
+
+    for(let i = 2;i<command.length;i++){
+        arrStore.setReverse(command[1],command[i]);
+    }
+
+    const length_arr = arrStore.getLen(command[1]);
+    
+    connection.write(formatRESPInt(length_arr))
+
+
+}
+
+
 
 
