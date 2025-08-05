@@ -1,6 +1,6 @@
 import * as net from "net";
 import { parseRESPCommand, formatRESPError } from './resp-parser';
-import { handlePing, handleEcho, handleSet, handleGet, handleRPUSH, handleLRANGE, handleLPUSH } from './commands';
+import { handlePing, handleEcho, handleSet, handleGet, handleRPUSH, handleLRANGE, handleLPUSH, handleLLEN } from './commands';
 
 const server: net.Server = net.createServer((connection: net.Socket) => {
   connection.on("data", (data: Buffer) => {
@@ -37,6 +37,9 @@ const server: net.Server = net.createServer((connection: net.Socket) => {
           break;
         case "LPUSH":
           handleLPUSH(connection,command);
+          break
+          case "LLEN":
+          handleLLEN(connection,command);
           break
 
       default:

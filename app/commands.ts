@@ -159,7 +159,7 @@ export function handleLPUSH(connection: net.Socket, command: RESPCommand):void{
 
     if(command.length <3){
 
-        connection.write(formatRESPError("wrong number of arguments for 'RPUSH'command "));
+        connection.write(formatRESPError("wrong number of arguments for 'LPUSH'command "));
         return;
     }
 
@@ -170,6 +170,22 @@ export function handleLPUSH(connection: net.Socket, command: RESPCommand):void{
     const length_arr = arrStore.getLen(command[1]);
     
     connection.write(formatRESPInt(length_arr))
+
+
+}
+
+export function handleLLEN(connection: net.Socket, command: RESPCommand):void{
+
+  if(command.length !==2){
+
+     connection.write(formatRESPError("wrong number of arguments for 'LLEN'command "));
+        return;
+
+  }
+
+  connection.write(formatRESPInt(arrStore.getLen(command[1])));
+
+
 
 
 }
