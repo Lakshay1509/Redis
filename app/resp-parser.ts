@@ -65,3 +65,7 @@ export function formatRESPArray(elements: string[]): string {
     
     return response;
 }
+
+export function formatRESPBulkString(value: string): string {
+    return `$${value.length}\r\n${value}\r\n`;
+}

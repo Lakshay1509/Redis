@@ -53,6 +53,7 @@ class RedisStoreArr {
     this.arrStore[key].push(value); 
     return this.arrStore[key].length;
   }
+
   setReverse(key: string, value: string): number {
     if (!(key in this.arrStore)) {
       this.arrStore[key] = [];  
@@ -79,6 +80,17 @@ class RedisStoreArr {
     }
     return this.arrStore[key][index];
   }
+
+  pop(key: string): string|null {
+    if (!(key in this.arrStore)) {
+      return null;  
+    }
+    const popped = this.arrStore[key][0];
+    this.arrStore[key].shift(); 
+    return popped;
+  }
+
+
 }
 
 
