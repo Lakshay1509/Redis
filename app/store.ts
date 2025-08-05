@@ -54,14 +54,25 @@ class RedisStoreArr {
     return this.arrStore[key].length;
   }
 
-  getLen(key:string):number{
-
+  getLen(key: string): number {
     if (!(key in this.arrStore)) {
       return 0;  
     }
     return this.arrStore[key].length;
   }
+
+  
+  getAt(key: string, index: number): string | undefined {
+    if (!(key in this.arrStore)) {
+      return undefined;
+    }
+    if (index < 0 || index >= this.arrStore[key].length) {
+      return undefined;
+    }
+    return this.arrStore[key][index];
+  }
 }
+
 
 
 export const store = new RedisStore();

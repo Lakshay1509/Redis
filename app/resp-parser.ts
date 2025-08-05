@@ -48,3 +48,20 @@ export function formatRESPNull(): string {
 export function formatRESPInt(num: number): string {
     return `:${num}\r\n`;
 }
+
+export function formatRESPArray(elements: string[]): string {
+    // Handle empty array
+    if (elements.length === 0) {
+        return '*0\r\n';
+    }
+    
+    // Start with array length
+    let response = `*${elements.length}\r\n`;
+    
+    // Add each element as a bulk string
+    for (const element of elements) {
+        response += `$${element.length}\r\n${element}\r\n`;
+    }
+    
+    return response;
+}
