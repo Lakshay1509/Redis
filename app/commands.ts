@@ -187,18 +187,34 @@ export function handleLLEN(connection: net.Socket, command: RESPCommand): void {
 }
 
 export function handleLPOP(connection: net.Socket, command: RESPCommand): void {
-  if (command.length !== 2) {
+  if (command.length < 2) {
     connection.write(
       formatRESPError("wrong number of arguments for 'LPOP' command")
     );
     return;
   }
 
-  const poppedValue = arrStore.pop(command[1]);
-  
-  if (poppedValue !== null && poppedValue !== undefined) {
-    connection.write(formatRESPBulkString(poppedValue));
+  if (command.length === 2) {
+    const poppedValue = arrStore.pop(command[1]);
+
+    if (poppedValue !== null && poppedValue !== undefined) {
+      connection.write(formatRESPBulkString(poppedValue));
+    } else {
+      connection.write(formatRESPNull());
+    }
   } else {
-    connection.write(formatRESPNull());
+    const poppedValueArr: string[] = [];
+    const limit = Number(command[2]);
+    let current = 0;
+
+    while (current < arrStore.getLen(command[1]) && current < limit) {
+
+      const poppedValue = arrStore.pop(command[1]);
+      if (poppedValue !== null && poppedValue !== undefined) {
+        poppedValueArr.push(poppedValue);
+      }
+      current++;
+    }
+    connection.write(formatRESPArray(poppedValueArr));
   }
 }
