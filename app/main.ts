@@ -1,6 +1,7 @@
 import * as net from "net";
 import { parseRESPCommand, formatRESPError } from './resp-parser';
-import { handlePing, handleEcho, handleSet, handleGet, handleRPUSH, handleLRANGE, handleLPUSH, handleLLEN, handleLPOP } from './commands';
+import { handlePing, handleEcho, handleSet, handleGet, handleRPUSH, handleLRANGE, handleLPUSH, handleLLEN, handleLPOP, handleBLPOP } from './commands';
+import { arrStore } from './store';
 
 const server: net.Server = net.createServer((connection: net.Socket) => {
   connection.on("data", (data: Buffer) => {
@@ -44,11 +45,23 @@ const server: net.Server = net.createServer((connection: net.Socket) => {
         case "LPOP":
           handleLPOP(connection,command);
           break
+        case "BLPOP":
+          handleBLPOP(connection,command);
+          break;
 
 
       default:
         connection.write(formatRESPError("unknown command"));
     }
+  });
+
+  // Clean up when client disconnects
+  connection.on('close', () => {
+    arrStore.cleanupDisconnectedClients();
+  });
+
+  connection.on('error', () => {
+    arrStore.cleanupDisconnectedClients();
   });
 });
 

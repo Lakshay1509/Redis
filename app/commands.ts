@@ -86,8 +86,8 @@ export function handleRPUSH(
   for (let i = 2; i < command.length; i++) {
     arrStore.set(command[1], command[i]);
   }
-  const length_arr = arrStore.getLen(command[1]);
 
+  const length_arr = arrStore.getLen(command[1]);
   connection.write(formatRESPInt(length_arr));
 }
 
@@ -208,7 +208,6 @@ export function handleLPOP(connection: net.Socket, command: RESPCommand): void {
     let current = 0;
 
     while (current < arrStore.getLen(command[1]) && current < limit) {
-
       const poppedValue = arrStore.pop(command[1]);
       if (poppedValue !== null && poppedValue !== undefined) {
         poppedValueArr.push(poppedValue);
@@ -217,4 +216,30 @@ export function handleLPOP(connection: net.Socket, command: RESPCommand): void {
     }
     connection.write(formatRESPArray(poppedValueArr));
   }
+}
+
+export function handleBLPOP(
+  connection: net.Socket,
+  command: RESPCommand
+): void {
+  if (command.length !== 3) {
+    connection.write(
+      formatRESPError("wrong number of arguments for 'BLPOP'command ")
+    );
+    return;
+  }
+
+  const key = command[1];
+  const timeoutStr = command[2];
+  const timeout = parseInt(timeoutStr);
+
+  if (isNaN(timeout) || timeout < 0) {
+    connection.write(
+      formatRESPError("timeout is not an integer or out of range")
+    );
+    return;
+  }
+
+  // Add client to blocking queue
+  arrStore.addBlockingClient(connection, key, timeout);
 }

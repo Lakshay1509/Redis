@@ -1,4 +1,13 @@
 import type { StoredValue } from './types';
+import * as net from "net";
+import { formatRESPArray } from './resp-parser';
+
+interface BlockingClient {
+  connection: net.Socket;
+  key: string;
+  timeout: number;
+  startTime: number;
+}
 
 class RedisStore {
   private store = new Map<string, StoredValue>();
@@ -45,12 +54,17 @@ class RedisStore {
 
 class RedisStoreArr {
   private arrStore: Record<string, any[]> = {};
+  private blockingClients: BlockingClient[] = [];
 
   set(key: string, value: string): number {
     if (!(key in this.arrStore)) {
       this.arrStore[key] = [];  
     }
     this.arrStore[key].push(value); 
+    
+    // Check for blocking clients waiting for this key
+    this.notifyBlockingClients(key);
+    
     return this.arrStore[key].length;
   }
 
@@ -59,9 +73,12 @@ class RedisStoreArr {
       this.arrStore[key] = [];  
     }
     this.arrStore[key].unshift(value); 
+    
+    // Check for blocking clients waiting for this key
+    this.notifyBlockingClients(key);
+    
     return this.arrStore[key].length;
   }
-  
 
   getLen(key: string): number {
     if (!(key in this.arrStore)) {
@@ -70,7 +87,6 @@ class RedisStoreArr {
     return this.arrStore[key].length;
   }
 
-  
   getAt(key: string, index: number): string | undefined {
     if (!(key in this.arrStore)) {
       return undefined;
@@ -85,12 +101,69 @@ class RedisStoreArr {
     if (!(key in this.arrStore)) {
       return null;  
     }
-    const popped = this.arrStore[key][0];
-    this.arrStore[key].shift(); 
-    return popped;
+    if (this.arrStore[key].length === 0) {
+      return null;
+    }
+    const popped = this.arrStore[key].shift();
+    return popped || null;
   }
 
+  addBlockingClient(connection: net.Socket, key: string, timeout: number): void {
+    // First check if there's already an element available
+    if (this.getLen(key) > 0) {
+      const element = this.pop(key);
+      if (element !== null) {
+        connection.write(formatRESPArray([key, element]));
+        return;
+      }
+    }
 
+    // Add to blocking clients if no element is available
+    this.blockingClients.push({
+      connection,
+      key,
+      timeout,
+      startTime: Date.now()
+    });
+
+    // Set up timeout if not infinite (0)
+    if (timeout > 0) {
+      setTimeout(() => {
+        this.removeBlockingClient(connection, key);
+      }, timeout * 1000);
+    }
+  }
+
+  private notifyBlockingClients(key: string): void {
+    // Find all clients waiting for this key
+    const waitingClients = this.blockingClients.filter(client => client.key === key);
+    
+    // Notify clients in FIFO order while there are elements
+    for (const client of waitingClients) {
+      if (this.getLen(key) > 0) {
+        const element = this.pop(key);
+        if (element !== null) {
+          client.connection.write(formatRESPArray([key, element]));
+          this.removeBlockingClient(client.connection, key);
+        }
+      } else {
+        break; // No more elements available
+      }
+    }
+  }
+
+  private removeBlockingClient(connection: net.Socket, key: string): void {
+    this.blockingClients = this.blockingClients.filter(
+      client => !(client.connection === connection && client.key === key)
+    );
+  }
+
+  // Clean up disconnected clients
+  cleanupDisconnectedClients(): void {
+    this.blockingClients = this.blockingClients.filter(client => 
+      !client.connection.destroyed
+    );
+  }
 }
 
 
