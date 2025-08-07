@@ -1,6 +1,6 @@
 import type { StoredValue } from './types';
 import * as net from "net";
-import { formatRESPArray } from './resp-parser';
+import { formatRESPArray, formatRESPNull } from './resp-parser';
 
 interface BlockingClient {
   connection: net.Socket;
@@ -62,9 +62,6 @@ class RedisStoreArr {
     }
     this.arrStore[key].push(value); 
     
-    // Check for blocking clients waiting for this key
-    this.notifyBlockingClients(key);
-    
     return this.arrStore[key].length;
   }
 
@@ -73,9 +70,6 @@ class RedisStoreArr {
       this.arrStore[key] = [];  
     }
     this.arrStore[key].unshift(value); 
-    
-    // Check for blocking clients waiting for this key
-    this.notifyBlockingClients(key);
     
     return this.arrStore[key].length;
   }
@@ -129,9 +123,23 @@ class RedisStoreArr {
     // Set up timeout if not infinite (0)
     if (timeout > 0) {
       setTimeout(() => {
-        this.removeBlockingClient(connection, key);
+        // Check if client is still waiting before sending timeout response
+        const clientIndex = this.blockingClients.findIndex(
+          client => client.connection === connection && client.key === key
+        );
+        
+        if (clientIndex !== -1) {
+          // Send null bulk string response for timeout
+          connection.write(formatRESPNull());
+          this.removeBlockingClient(connection, key);
+        }
       }, timeout * 1000);
     }
+  }
+
+  // Public method to notify blocking clients after operations complete
+  notifyWaitingClients(key: string): void {
+    this.notifyBlockingClients(key);
   }
 
   private notifyBlockingClients(key: string): void {

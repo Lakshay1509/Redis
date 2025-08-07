@@ -83,12 +83,17 @@ export function handleRPUSH(
     return;
   }
 
+  const key = command[1];
+  
   for (let i = 2; i < command.length; i++) {
-    arrStore.set(command[1], command[i]);
+    arrStore.set(key, command[i]);
   }
 
-  const length_arr = arrStore.getLen(command[1]);
+  const length_arr = arrStore.getLen(key);
   connection.write(formatRESPInt(length_arr));
+  
+  // Notify blocking clients after sending response
+  arrStore.notifyWaitingClients(key);
 }
 
 export function handleLRANGE(
@@ -166,13 +171,17 @@ export function handleLPUSH(
     return;
   }
 
+  const key = command[1];
+  
   for (let i = 2; i < command.length; i++) {
-    arrStore.setReverse(command[1], command[i]);
+    arrStore.setReverse(key, command[i]);
   }
 
-  const length_arr = arrStore.getLen(command[1]);
-
+  const length_arr = arrStore.getLen(key);
   connection.write(formatRESPInt(length_arr));
+  
+  // Notify blocking clients after sending response
+  arrStore.notifyWaitingClients(key);
 }
 
 export function handleLLEN(connection: net.Socket, command: RESPCommand): void {
@@ -231,11 +240,11 @@ export function handleBLPOP(
 
   const key = command[1];
   const timeoutStr = command[2];
-  const timeout = parseInt(timeoutStr);
+  const timeout = parseFloat(timeoutStr);
 
   if (isNaN(timeout) || timeout < 0) {
     connection.write(
-      formatRESPError("timeout is not an integer or out of range")
+      formatRESPError("timeout is not a valid number or out of range")
     );
     return;
   }
