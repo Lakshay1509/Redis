@@ -1,6 +1,6 @@
 import * as net from "net";
 import { parseRESPCommand, formatRESPError } from './resp-parser';
-import { handlePing, handleEcho, handleSet, handleGet, handleRPUSH, handleLRANGE, handleLPUSH, handleLLEN, handleLPOP, handleBLPOP } from './commands';
+import { handlePing, handleEcho, handleSet, handleGet, handleRPUSH, handleLRANGE, handleLPUSH, handleLLEN, handleLPOP, handleBLPOP, handleGetType } from './commands';
 import { arrStore } from './store';
 
 const server: net.Server = net.createServer((connection: net.Socket) => {
@@ -29,6 +29,10 @@ const server: net.Server = net.createServer((connection: net.Socket) => {
       case "GET":
         handleGet(connection, command);
         break;
+      
+        case "TYPE":
+          handleGetType(connection,command);
+          break;
         
         case "RPUSH":
             handleRPUSH(connection,command);

@@ -33,6 +33,19 @@ class RedisStore {
     return val.value;
   }
 
+  getType(key:string):string|null {
+
+  const value = this.get(key);
+
+  if(!value){
+    return null;
+  }
+  else{
+    return typeof(value);
+  }
+
+
+}
   delete(key: string): boolean {
     return this.store.delete(key);
   }

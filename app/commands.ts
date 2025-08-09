@@ -72,6 +72,26 @@ export function handleGet(connection: net.Socket, command: RESPCommand): void {
   }
 }
 
+export function handleGetType(connection: net.Socket, command: RESPCommand): void {
+  if (command.length !== 2) {
+    connection.write(
+      formatRESPError("wrong number of arguments for 'TYPE' command")
+    );
+    return;
+  }
+
+  const key = command[1];
+  const typeofvalue = store.getType(key);
+
+  if (typeofvalue === null) {
+    connection.write(formatRESPSimpleString("none"));
+  } else {
+    connection.write(formatRESPSimpleString(typeofvalue));
+  }
+}
+
+
+
 export function handleRPUSH(
   connection: net.Socket,
   command: RESPCommand
@@ -215,8 +235,9 @@ export function handleLPOP(connection: net.Socket, command: RESPCommand): void {
     const poppedValueArr: string[] = [];
     const limit = Number(command[2]);
     let current = 0;
+    const len = arrStore.getLen(command[1]);
 
-    while (current < arrStore.getLen(command[1]) && current < limit) {
+    while (current < len && current < limit) {
       const poppedValue = arrStore.pop(command[1]);
       if (poppedValue !== null && poppedValue !== undefined) {
         poppedValueArr.push(poppedValue);
