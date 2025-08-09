@@ -1,7 +1,6 @@
 import * as net from "net";
 import type { RESPCommand } from "./types";
-import { store } from "./store";
-import { arrStore } from "./store";
+import { store, arrStore, getGlobalType } from "./store";
 import {
   formatRESPString,
   formatRESPError,
@@ -81,13 +80,9 @@ export function handleGetType(connection: net.Socket, command: RESPCommand): voi
   }
 
   const key = command[1];
-  const typeofvalue = store.getType(key);
-
-  if (typeofvalue === null) {
-    connection.write(formatRESPSimpleString("none"));
-  } else {
-    connection.write(formatRESPSimpleString(typeofvalue));
-  }
+  const typeofvalue = getGlobalType(key);
+  
+  connection.write(formatRESPSimpleString(typeofvalue));
 }
 
 

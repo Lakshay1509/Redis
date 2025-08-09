@@ -1,13 +1,7 @@
-import type { StoredValue } from './types';
+import type { StoredValue,BlockingClient } from './types';
 import * as net from "net";
 import { formatRESPArray, formatRESPNull } from './resp-parser';
-
-interface BlockingClient {
-  connection: net.Socket;
-  key: string;
-  timeout: number;
-  startTime: number;
-}
+import { RedisStreamStore } from './stream/streamStore';
 
 class RedisStore {
   private store = new Map<string, StoredValue>();
@@ -191,3 +185,23 @@ class RedisStoreArr {
 
 export const store = new RedisStore();
 export const arrStore = new RedisStoreArr();
+
+// Global function to get the Redis type of a key across all stores
+export function getGlobalType(key: string): string {
+  // Check if key exists in string store
+  if (store.has(key)) {
+    return "string";
+  }
+  
+  // Check if key exists in list store
+  if (arrStore.getLen(key) > 0) {
+    return "list";
+  }
+  
+  // Check if key exists in stream store
+  if (RedisStreamStore.hasStream(key)) {
+    return "stream";
+  }
+  
+  return "none";
+}
