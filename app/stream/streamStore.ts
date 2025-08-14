@@ -6,6 +6,12 @@ class RedisStream {
   private store = new Map<string, Map<string, StreamEntry>>();
 
   validate(streamKey: string, streamId: string): {isValid: boolean, type: number,streamId:string} {
+
+    if(streamId==="*"){
+
+      return {isValid:true,type:1,streamId:`${String(Date.now())}-0`}
+    }
+
     const stream = this.store.get(streamKey);
     let lastId: string | undefined;
     
