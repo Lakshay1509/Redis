@@ -162,7 +162,7 @@ class RedisStoreArr {
           this.removeBlockingClient(client.connection, key);
         }
       } else {
-        break; // No more elements available
+        break; 
       }
     }
   }
@@ -186,19 +186,19 @@ class RedisStoreArr {
 export const store = new RedisStore();
 export const arrStore = new RedisStoreArr();
 
-// Global function to get the Redis type of a key across all stores
+
 export function getGlobalType(key: string): string {
-  // Check if key exists in string store
+  
   if (store.has(key)) {
     return "string";
   }
   
-  // Check if key exists in list store
+  
   if (arrStore.getLen(key) > 0) {
     return "list";
   }
   
-  // Check if key exists in stream store
+  
   if (RedisStreamStore.hasStream(key)) {
     return "stream";
   }

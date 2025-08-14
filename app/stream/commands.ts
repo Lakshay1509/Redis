@@ -13,11 +13,28 @@ export function handleXADD(connection: net.Socket, command: RESPCommand): void {
 
   const key = command[1];
   const Id = command[2];
-  for(let i = 3; i<command.length;i+=2){
+
+  
+  const {isValid,type} = RedisStreamStore.validate(key,Id);
+  if(isValid===false){
+      if(type===0){
+        connection.write(formatRESPError("The ID specified in XADD must be greater than 0-0"));
+      }
+      else{
+        connection.write(formatRESPError("The ID specified in XADD is equal or smaller than the target stream top item"));
+      }
+      return; 
+  }
+  else{
+    for(let i = 3; i<command.length;i+=2){
     const fieldKey = command[i];
     const fieldValue = command[i+1];
     RedisStreamStore.add(key,Id,{fieldKey,fieldValue});
   }
 
   connection.write(formatRESPBulkString(Id));
+
+  }
+
+  
 }
