@@ -5,14 +5,7 @@ interface StreamEntry {
 class RedisStream {
   private store = new Map<string, Map<string, StreamEntry>>();
 
-  validate(streamKey: string, streamId: string): {isValid: boolean, type: number} {
-    const [leftPart, rightPart] = streamId.split("-");
-    
-    // Basic format validation
-    if (Number(leftPart) < 0 || Number(rightPart) <= 0) {
-      return {isValid: false, type: 0};
-    }
-
+  validate(streamKey: string, streamId: string): {isValid: boolean, type: number,streamId:string} {
     const stream = this.store.get(streamKey);
     let lastId: string | undefined;
     
@@ -22,9 +15,43 @@ class RedisStream {
       }
     }
 
+    const [leftPart, rightPart] = streamId.split("-");
+
+    if(Number(leftPart) >= 0 && rightPart==="*"){
+      if(lastId===undefined){
+        if(Number(leftPart)===0){
+            return {isValid:true,type:1,streamId:`0-1`}
+          }
+          else{
+            return {isValid:true,type:1,streamId:`${leftPart}-0`}
+          }
+      }
+      else{
+        const [leftLastId, rightLastId] = lastId.split("-");
+        if(Number(leftLastId)===Number(leftPart)){
+          return {isValid:true,type:1,streamId:`${leftPart}-${Number(rightLastId)+1}`}
+        }
+        else{
+          if(Number(leftPart)===0){
+            return {isValid:true,type:1,streamId:`0-1`}
+          }
+          else{
+            return {isValid:true,type:1,streamId:`${leftPart}-0`}
+          }
+        }
+        
+      }
+      
+    }
+    
+    // Basic format validation
+    if (Number(leftPart) < 0 || Number(rightPart) <= 0) {
+      return {isValid: false, type: 0,streamId:streamId};
+    }
+
     // If no previous entries, current ID is valid
     if (lastId === undefined) {
-      return {isValid: true, type: 0};
+      return {isValid: true, type: 0,streamId:streamId};
     }
 
     // Compare with last ID
@@ -36,10 +63,10 @@ class RedisStream {
 
     if (currentTimestamp === lastTimestamp) {
       // Same timestamp: sequence must be greater
-      return {isValid: currentSequence > lastSequence, type: 1};
+      return {isValid: currentSequence > lastSequence, type: 1,streamId:streamId};
     } else {
       // Different timestamp: timestamp must be greater
-      return {isValid: currentTimestamp > lastTimestamp, type: 1};
+      return {isValid: currentTimestamp > lastTimestamp, type: 1,streamId:streamId};
     }
 }
 
