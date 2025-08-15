@@ -109,7 +109,7 @@ class RedisStream {
     return this.store.get(streamKey);
   }
 
-  // Get entries in a range (useful for Redis-like range queries)
+ 
   getRange(
     streamKey: string,
     startId?: string,
@@ -120,8 +120,15 @@ class RedisStream {
 
     const entries: Array<{ id: string; entry: StreamEntry }> = [];
 
+    
+    const isMinimum = (id: string) => id === "-";
+    const isMaximum = (id: string) => id === "+";
+
     for (const [id, entry] of stream) {
-      if ((!startId || id >= startId) && (!endId || id <= endId)) {
+      const shouldIncludeStart = !startId || isMinimum(startId) || id >= startId;
+      const shouldIncludeEnd = !endId || isMaximum(endId) || id <= endId;
+      
+      if (shouldIncludeStart && shouldIncludeEnd) {
         entries.push({ id, entry });
       }
     }
