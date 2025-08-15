@@ -2,7 +2,7 @@ import * as net from "net";
 import { parseRESPCommand, formatRESPError } from './resp-parser';
 import { handlePing, handleEcho, handleSet, handleGet, handleRPUSH, handleLRANGE, handleLPUSH, handleLLEN, handleLPOP, handleBLPOP, handleGetType } from './commands';
 import { arrStore } from './store';
-import { handleXADD } from "./stream/commands";
+import { handleXADD, handleXRANGE } from "./stream/commands";
 
 const server: net.Server = net.createServer((connection: net.Socket) => {
   connection.on("data", (data: Buffer) => {
@@ -55,6 +55,9 @@ const server: net.Server = net.createServer((connection: net.Socket) => {
           break;
         case "XADD":
           handleXADD(connection,command);
+          break;
+        case "XRANGE":
+          handleXRANGE(connection,command);
           break;
 
 

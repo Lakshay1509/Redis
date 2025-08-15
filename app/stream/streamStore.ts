@@ -7,10 +7,13 @@ class RedisStream {
 
   validate(streamKey: string, streamId: string): {isValid: boolean, type: number,streamId:string} {
 
+    //full auto generate
     if(streamId==="*"){
 
       return {isValid:true,type:1,streamId:`${String(Date.now())}-0`}
     }
+
+    // find lastid for stream
 
     const stream = this.store.get(streamKey);
     let lastId: string | undefined;
@@ -23,6 +26,8 @@ class RedisStream {
 
     const [leftPart, rightPart] = streamId.split("-");
 
+
+    //partial generate
     if(Number(leftPart) >= 0 && rightPart==="*"){
       if(lastId===undefined){
         if(Number(leftPart)===0){

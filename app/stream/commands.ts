@@ -14,7 +14,6 @@ export function handleXADD(connection: net.Socket, command: RESPCommand): void {
   const key = command[1];
   let Id = command[2];
 
-  
   const {isValid,type,streamId} = RedisStreamStore.validate(key,Id);
   if(isValid===false){
       if(type===0){
@@ -25,16 +24,58 @@ export function handleXADD(connection: net.Socket, command: RESPCommand): void {
       }
       return; 
   }
-  else{
-    for(let i = 3; i<command.length;i+=2){
-    const fieldKey = command[i];
-    const fieldValue = command[i+1];
-    RedisStreamStore.add(key,streamId,{fieldKey,fieldValue});
+  else {
+    
+    const fields: Record<string, string> = {};
+    
+    for(let i = 3; i < command.length; i += 2) {
+      const fieldName = command[i];
+      const fieldValue = command[i+1];
+     
+      fields[fieldName] = fieldValue;
+    }
+    
+    
+    RedisStreamStore.add(key, streamId, fields);
+    
+    connection.write(formatRESPBulkString(streamId));
+  }
+}
+
+export function handleXRANGE(connection: net.Socket, command: RESPCommand): void {
+  if (command.length < 4) {
+    connection.write(
+      formatRESPError("wrong number of arguments for 'XRANGE' command")
+    );
+    return;
   }
 
-  connection.write(formatRESPBulkString(streamId));
-
-  }
-
+  const key = command[1];
+  const start = command[2];
+  const end = command[3];
   
+  const entries = RedisStreamStore.getRange(key, start, end);
+  
+  let response = "*" + entries.length + "\r\n";
+  
+  for (const { id, entry } of entries) {
+    response += "*2\r\n"; 
+    response += formatRESPBulkString(id);
+    
+   
+    const values = [];
+    for (const [field, value] of Object.entries(entry)) {
+      values.push(field);
+      values.push(value);
+    }
+    
+    response += "*" + values.length + "\r\n";
+    
+   
+    for (const value of values) {
+      response += formatRESPBulkString(String(value));
+    }
+  }
+  
+  connection.write(response);
 }
